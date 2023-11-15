@@ -17,9 +17,6 @@ class CustomInfoWindowController {
   /// Hides [CustomInfoWindow].
   VoidCallback? hideInfoWindow;
 
-  /// Shows [CustomInfoWindow].
-  VoidCallback? showInfoWindow;
-
   /// Holds [GoogleMapController] for calculating [CustomInfoWindow] position.
   GoogleMapController? googleMapController;
 
@@ -27,7 +24,6 @@ class CustomInfoWindowController {
     addInfoWindow = null;
     onCameraMove = null;
     hideInfoWindow = null;
-    showInfoWindow = null;
     googleMapController = null;
   }
 }
@@ -46,10 +42,7 @@ class CustomInfoWindow extends StatefulWidget {
   /// Width of [CustomInfoWindow].
   final double width;
 
-  final Function(double top, double left, double width, double height) onChange;
-
-  const CustomInfoWindow(
-    this.onChange, {
+  const CustomInfoWindow({
     required this.controller,
     this.offset = 50,
     this.height = 50,
@@ -79,31 +72,22 @@ class _CustomInfoWindowState extends State<CustomInfoWindow> {
     widget.controller.addInfoWindow = _addInfoWindow;
     widget.controller.onCameraMove = _onCameraMove;
     widget.controller.hideInfoWindow = _hideInfoWindow;
-    widget.controller.showInfoWindow = _showInfoWindow;
   }
 
   /// Calculate the position on [CustomInfoWindow] and redraw on screen.
   void _updateInfoWindow() async {
-    if (_latLng == null ||
-        _child == null ||
-        widget.controller.googleMapController == null) {
+    if (_latLng == null || _child == null || widget.controller.googleMapController == null) {
       return;
     }
-    ScreenCoordinate screenCoordinate = await widget
-        .controller.googleMapController!
-        .getScreenCoordinate(_latLng!);
-    double devicePixelRatio =
-        Platform.isAndroid ? MediaQuery.of(context).devicePixelRatio : 1.0;
-    double left =
-        (screenCoordinate.x.toDouble() / devicePixelRatio) - (widget.width / 2);
-    double top = (screenCoordinate.y.toDouble() / devicePixelRatio) -
-        (widget.offset + widget.height);
+    ScreenCoordinate screenCoordinate = await widget.controller.googleMapController!.getScreenCoordinate(_latLng!);
+    double devicePixelRatio = Platform.isAndroid ? MediaQuery.of(context).devicePixelRatio : 1.0;
+    double left = (screenCoordinate.x.toDouble() / devicePixelRatio) - (widget.width / 2);
+    double top = (screenCoordinate.y.toDouble() / devicePixelRatio) - (widget.offset + widget.height);
     setState(() {
       _showNow = true;
       _leftMargin = left;
       _topMargin = top;
     });
-    widget.onChange.call(top, left, widget.width, widget.height);
   }
 
   /// Assign the [Widget] and [Marker]'s [LatLng].
@@ -112,7 +96,9 @@ class _CustomInfoWindowState extends State<CustomInfoWindow> {
     assert(latLng != null);
     _child = child;
     _latLng = latLng;
-    _updateInfoWindow();
+    setState(() {
+      _showNow = true;
+    });
   }
 
   /// Notifies camera movements on [GoogleMap].
@@ -128,21 +114,13 @@ class _CustomInfoWindowState extends State<CustomInfoWindow> {
     });
   }
 
-  /// Enables [CustomInfoWindow] visibility.
-  void _showInfoWindow() {
-    _updateInfoWindow();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Positioned(
       left: _leftMargin,
       top: _topMargin,
       child: Visibility(
-        visible: (_showNow == false ||
-                (_leftMargin == 0 && _topMargin == 0) ||
-                _child == null ||
-                _latLng == null)
+        visible: (_showNow == false || (_leftMargin == 0 && _topMargin == 0) || _child == null || _latLng == null)
             ? false
             : true,
         child: Container(
